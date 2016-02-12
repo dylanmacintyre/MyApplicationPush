@@ -21,7 +21,9 @@ public class SensorsActivity extends AppCompatActivity implements SensorEventLis
 
     private SensorManager senSensorManager;
     private Sensor senAccelerometer;
-    TextView textView = new TextView(this);
+    TextView textView, tv,tv1,tv2;
+    private float[] gravity = new float[3];
+    private float[] linear_acceleration = new float[3];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +31,8 @@ public class SensorsActivity extends AppCompatActivity implements SensorEventLis
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+
+        textView = (TextView)(findViewById(R.id.accelerometer_text));
 
         setContentView(R.layout.activity_sensors);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -44,32 +48,49 @@ public class SensorsActivity extends AppCompatActivity implements SensorEventLis
         });
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-
         Intent intent = getIntent();
-        //String message = intent.getStringExtra(MainActivity.EXTRA_MESSAGE);
+        String message = intent.getStringExtra(MainActivity.EXTRA_MESSAGE);
+        TextView textView = new TextView(this);
         textView.setTextSize(40);
         //textView.setText(message);
 
-        SensorManager sMgr;
-        sMgr = (SensorManager)this.getSystemService(SENSOR_SERVICE);
-        List<Sensor> mList= sMgr.getSensorList(Sensor.TYPE_ALL);
-        for(int i = 0; i < mList.size();i++){
-           textView.setText("\n " + mList.get(i).getName());
-        }
-
         RelativeLayout layout = (RelativeLayout) findViewById(R.id.sensorContent);
         layout.addView(textView);
+
+        tv=(TextView)findViewById(R.id.xval);
+        tv1=(TextView)findViewById(R.id.yval);
+        tv2=(TextView)findViewById(R.id.zval);
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Sensor mySensor = event.sensor;
-        if(mySensor.getType()== Sensor.TYPE_ACCELEROMETER){
-            double x = event.values[0];
-            double y = event.values[1];
-            double z = event.values[2];
-            //textView.setText("X:"+x +"\nY:"+y+"\nZ:"+z);
-        }
+        // In this example, alpha is calculated as t / (t + dT),
+        // where t is the low-pass filter's time-constant and
+        // dT is the event delivery rate.
+
+        final float alpha = (float)0.8;
+
+        // Isolate the force of gravity with the low-pass filter.
+        gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0];
+        gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
+        gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
+
+        // Remove the gravity contribution with the high-pass filter.
+        linear_acceleration[0] = event.values[0] - gravity[0];
+        linear_acceleration[1] = event.values[1] - gravity[1];
+        linear_acceleration[2] = event.values[2] - gravity[2];
+        tv.setText("X Axis: "+linear_acceleration[0]);
+        tv1.setText("Y Axis: "+linear_acceleration[1]);
+        tv2.setText("Z Axis: "+linear_acceleration[2]);
+  /*      // Many sensors return 3 values, one for each axis.
+        float x = event.values[0];
+        float y = event.values[1];
+        float z = event.values[2];
+        //display values using TextView
+        tv.setText("X axis" + "\t\t" + x);
+        tv1.setText("Y axis" + "\t\t" +y);
+        tv2.setText("Z axis" + "\t\t" + z);*/
+
     }
 
     @Override
